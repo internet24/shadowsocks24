@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign in | Shadowsocks24</title>
+    <link rel="stylesheet" href="third_party/bootstrap-5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="favicon.ico">
+</head>
+<body>
+
+<div class="container py-5 text-center">
+    <div class="col col-md-6 col-lg-4 offset-md-3 offset-lg-4">
+        <h1>Shadowsocks<span>24</span></h1>
+        <div class="card mt-5">
+            <div class="card-body text-start">
+                <div class="d-grid gap-2">
+                    <input type="text" class="form-control" id="username" placeholder="Username" title="Username">
+                    <input type="password" class="form-control" id="password" placeholder="Password" title="Password">
+                    <input type="button" class="btn btn-success d-block" id="sign-in" value="Sign in">
+                </div>
+            </div>
+        </div>
+        <div class="text-muted mt-3">
+            <small>
+                Created by <a href="https://internet24.github.com" class="text-decoration-none">Internet24</a> |
+                <a href="https://github.com/internet24/shadowsocks24" class="text-decoration-none">GitHub</a>
+            </small>
+        </div>
+    </div>
+</div>
+
+<script src="third_party/jquery-3.6.3.min.js"></script>
+<script src="third_party/bootstrap-5.3.0/js/bootstrap.min.js"></script>
+<script src="js/scripts.js"></script>
+<script>
+    jQuery(function () {
+        if (localStorage.getItem("token") != null) {
+            window.location = "keys.html"
+        }
+
+        $('#sign-in').click(function () {
+            let me = $(this)
+            me.val('Processing...')
+            me.attr('disabled', true)
+
+            $.ajax({
+                data: JSON.stringify({
+                    "username": $("#username").val(),
+                    "password": $("#password").val(),
+                }),
+                dataType: 'json',
+                success: function (response) {
+                    localStorage.setItem("token", response['token'])
+                    window.location = "keys.html"
+                },
+                error: function (response) {
+                    if (response.status === 401) {
+                        me.val('Unauthorized :(')
+                    } else {
+                        console.log(response)
+                        me.val('Internal error!')
+                    }
+
+                    setTimeout(function () {
+                        me.val('Sign in')
+                        me.attr('disabled', false)
+                    }, 1500)
+                },
+                processData: true,
+                type: 'POST',
+                url: '/v1/sign-in'
+            });
+        })
+    })
+</script>
+
+</body>
+</html>

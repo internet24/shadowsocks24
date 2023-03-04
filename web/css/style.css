@@ -1,0 +1,13 @@
+h1 span {
+    background: #198754;
+    font-weight: bold;
+    color: white;
+    display: inline-block;
+    border-radius: 50%;
+    margin-left: 0.4rem;
+    padding: 0.7rem;
+}
+
+.nav-link:not(.active) {
+    color: #198754 !important;
+}

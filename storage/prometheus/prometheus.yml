@@ -1,0 +1,11 @@
+global:
+    scrape_interval: 5s
+    external_labels:
+        monitor: Shadowsocks24
+scrape_configs:
+    - job_name: shadowsocks
+      static_configs:
+        - targets:
+            - 127.0.0.1:46731
+          labels:
+            service: s-0

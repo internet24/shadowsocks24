@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Keys | Shadowsocks24</title>
+    <link rel="stylesheet" href="third_party/bootstrap-5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="third_party/tabulator-5.4.3/dist/css/tabulator.min.css">
+    <link rel="stylesheet" href="third_party/tabulator-5.4.3/dist/css/tabulator_semanticui.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="favicon.ico">
+</head>
+<body>
+
+<div class="container py-5 text-center">
+    <div class="col">
+        <h1>Shadowsocks<span>24</span></h1>
+
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="#">Keys</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="servers.html">Servers</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="tools.html">Tools</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="settings.html">Settings</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="sign-out">Exit</a>
+            </li>
+        </ul>
+
+        <div id="table"></div>
+
+        <div class="mt-1 text-start">
+            <a href="#" class="btn btn-success btn-sm" id="create">+ New</a>
+        </div>
+
+        <div class="text-muted mt-3">
+            <small>
+                Created by <a href="https://internet24.github.com" class="text-decoration-none">Internet24</a> |
+                <a href="https://github.com/internet24/shadowsocks24" class="text-decoration-none">GitHub</a>
+            </small>
+        </div>
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" id="keyModal">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Access Keys</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div>
+                    <label class="form-label">
+                        <small>Shadowsocks Keys:</small>
+                    </label>
+                    <ul id="shadowsocks-keys"></ul>
+                </div>
+                <div class="mt-2">
+                    <label class="form-label">
+                        <small>SSConf Link:</small>
+                        <small class="text-muted">(for Outline clients)</small>
+                    </label>
+                    <ul id="ssconf-links"></ul>
+                </div>
+                <div class="mt-2">
+                    <label class="form-label">
+                        <small>Subscription Links:</small>
+                        <small class="text-muted">(for V2Ray clients)</small>
+                    </label>
+                    <ul id="subscription-links"></ul>
+                </div>
+                <div class="mt-2">
+                    <label class="form-label">
+                        <small>Traffic Links:</small>
+                    </label>
+                    <ul id="traffic-links"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="third_party/jquery-3.6.3.min.js"></script>
+<script src="third_party/bootstrap-5.3.0/js/bootstrap.min.js"></script>
+<script src="third_party/tabulator-5.4.3/dist/js/tabulator.min.js"></script>
+<script src="js/scripts.js"></script>
+<script>
+    let SETTINGS
+    $.ajax({
+        dataType: "json",
+        success: function (response) {
+            SETTINGS = response
+        },
+        error: function (response) {
+            console.log(response)
+            checkAuth(response)
+        },
+        processData: true,
+        type: "GET",
+        url: "/v1/settings"
+    });
+
+    let SERVERS
+    $.ajax({
+        dataType: "json",
+        success: function (response) {
+            SERVERS = response
+        },
+        error: function (response) {
+            console.log(response)
+            checkAuth(response)
+        },
+        processData: true,
+        type: "GET",
+        url: "/v1/servers"
+    });
+
+    let show = function (rowIndex) {
+        let data = table.getRow(rowIndex).getData()
+
+        let secret = data.secret
+        let cipher = data.cipher
+        let name = data.name
+        let auth = btoa(`${cipher}:${secret}`)
+
+        let shadowsocksKeys = $("#shadowsocks-keys")
+        shadowsocksKeys.html("")
+        SERVERS.forEach(function (v) {
+            if (v['shadowsocks_enabled']) {
+                let host = v["shadowsocks_host"]
+                let port = v["shadowsocks_port"]
+                let key = `ss://${auth}@${host}:${port}/?outline=1#${name}`
+                shadowsocksKeys.append(`<li><a href="${key}">${key}</a></li>`)
+            }
+        })
+
+        if (SETTINGS["external_https"]) {
+            let url = SETTINGS["external_https"].replace(/https/i, 'ssconf')
+            let key = `${url}/ssconf/${auth}.json#${name}`
+            $("#ssconf-links").html(`<li><a href="${key}">${key}</a></li>`)
+        } else {
+            $("#ssconf-links").html("<li>It requires <code>External HTTPS</code> in Settings tab.</li>")
+        }
+
+        let subscription = `${SETTINGS["external_http"]}/subscription/${auth}#${name}`
+        $("#subscription-links").html(`<li><a href="${subscription}">${subscription}</a></li>`)
+
+        let trafficLink
+        if (SETTINGS["external_https"]) {
+            trafficLink = SETTINGS["external_https"] + "/traffic.html?q=" + auth
+        } else {
+            trafficLink = SETTINGS["external_http"] + "/traffic.html?q=" + auth
+        }
+        $("#traffic-links").html(`<li><a href="${trafficLink}">${trafficLink}</a></li>`)
+
+        $("#keyModal").modal("show")
+    };
+
+    let tooltip = function (e, cell) {
+        let el = document.createElement("div");
+        el.style.backgroundColor = "black";
+        el.style.padding = "10px";
+        el.style.borderRadius = "5px";
+        el.style.color = "white";
+        el.innerText = cell.getColumn().getField() + ": " + cell.getValue();
+
+        switch (cell.getColumn().getField()) {
+            case "quota":
+                if (cell.getValue() === 0) {
+                    el.innerText = cell.getColumn().getField() + ": " + "unlimited"
+                } else {
+                    el.innerText += " (0 for unlimited)"
+                }
+                break
+        }
+
+        return el;
+    }
+
+    let destroy = function (rowIndex) {
+        table.alert("Deleting the key...", "msg");
+
+        $.ajax({
+            contentType: "application/json",
+            dataType: "json",
+            success: function () {
+                table.alert("Item deleted successfully.", "msg");
+                setTimeout(function () {
+                    window.location.reload()
+                }, 1000)
+            },
+            error: function (response) {
+                console.log(response)
+                checkAuth(response)
+                let t = 2000
+                if (response.status === 400) {
+                    table.alert(response["responseJSON"]["message"], "error");
+                } else {
+                    table.alert("Cannot delete the item.", "error");
+                    t = 1000
+                }
+                setTimeout(function () {
+                    table.clearAlert()
+                }, t)
+            },
+            processData: true,
+            type: "DELETE",
+            url: `/v1/keys/${rowIndex}`
+        });
+    }
+
+    let actionsFormatter = function (cell) {
+        return `<button class="btn btn-sm btn-outline-danger" onclick="destroy('${cell.getRow().getIndex()}')">
+                Delete</button>&nbsp;<button class="btn btn-sm btn-success" onclick="show('${cell.getRow().getIndex()}')">
+                Show</button>`;
+    }
+
+    let table = new Tabulator("#table", {
+        ajaxURL: "/v1/keys",
+        ajaxConfig: {
+            headers: {
+                "Authorization": `Bearer ${localStorage.getItem("token")}`,
+            },
+        },
+        layout: "fitDataStretch",
+        initialSort: [{column: "id", dir: "desc"}],
+        validationMode: "blocking",
+        columnDefaults: {
+            tooltip: tooltip,
+            vertAlign: 'middle'
+        },
+        columns: [
+            {
+                title: "ID", field: "id", resizable: true, headerFilter: "input"
+            },
+            {
+                title: "Name", field: "name", resizable: true, headerFilter: "input", editor: "input",
+                validator: ["required", "minLength:1", "maxLength:32"],
+            },
+            {
+                title: "Secret", field: "secret", resizable: true, editor: "input",
+                validator: ["required", "unique", "minLength:5", "maxLength:64"],
+            },
+            {
+                title: "Cipher", field: "cipher", widthGrow: 2, resizable: true, editor: "list",
+                editorParams: {values: ["chacha20-ietf-poly1305", "aes-128-gcm", "aes-256-gcm"]},
+                validator: "in:chacha20-ietf-poly1305|aes-128-gcm|aes-256-gcm"
+            },
+            {
+                title: "Quota (MB)", field: "quota", resizable: true, editor: "number",
+                validator: ["required", "min:0", "max:1000000000"],
+            },
+            {
+                title: "Enabled", field: "enabled", resizable: true, editor: true, formatter: "tickCross"
+            },
+            {
+                title: "Used (MB)",
+                field: "used",
+                resizable: true,
+                sorter: "number",
+                formatter: "progress",
+                formatterParams: function (cell) {
+                    return {
+                        min: 0,
+                        max: cell.getData().quota || cell.getData().used,
+                        color: cell.getData().quota ? ["#3fb449", "#b4a43f", "#b4513f"] : ["#3fb449"],
+                        legend: true,
+                        legendColor: "#000000",
+                        legendAlign: "center",
+                    }
+                }
+            },
+            {
+                title: "Actions", formatter: actionsFormatter, hozAlign: "right",
+
+            },
+        ],
+    });
+
+    table.on("cellEdited", function (cell) {
+        if (!cell.getData().name || !cell.getData().secret || !cell.getData().cipher) {
+            return
+        }
+
+        table.alert("Saving the key...", "msg");
+
+        $.ajax({
+            contentType: "application/json",
+            data: JSON.stringify(cell.getData()),
+            dataType: "json",
+            success: function () {
+                table.alert("Item saved successfully.", "msg");
+                setTimeout(function () {
+                    window.location.reload()
+                }, 1000)
+            },
+            error: function (response) {
+                console.log(response)
+                checkAuth(response)
+                if (response.status === 400) {
+                    table.alert(response["responseJSON"]["message"], "error");
+                } else {
+                    table.alert("Cannot save the item.", "error");
+                }
+                setTimeout(function () {
+                    table.clearAlert()
+                }, 1000)
+            },
+            processData: true,
+            type: cell.getData().id === "{ID}" ? "POST" : "PUT",
+            url: "/v1/keys"
+        });
+    });
+
+    $("#create").click(function () {
+        table.addRow({
+            id: "{ID}",
+            name: "",
+            secret: btoa(Math.random().toString()).substring(5, 20),
+            server_host: "{HOST}",
+            shadowsocks_port: 1000,
+            cipher: "chacha20-ietf-poly1305",
+            quota: 0,
+            used: 0,
+            enabled: true,
+        })
+    })
+</script>
+
+</body>
+</html>

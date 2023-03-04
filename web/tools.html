@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tools | Shadowsocks24</title>
+    <link rel="stylesheet" href="third_party/bootstrap-5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="third_party/tabulator-5.4.3/dist/css/tabulator.min.css">
+    <link rel="stylesheet" href="third_party/tabulator-5.4.3/dist/css/tabulator_semanticui.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="favicon.ico">
+</head>
+<body>
+
+<div class="container py-5 text-center">
+    <div class="col">
+        <h1>Shadowsocks<span>24</span></h1>
+
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+                <a class="nav-link" href="keys.html">Keys</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="servers.html">Servers</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" aria-current="page" href="tools.html">Tools</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="settings.html">Settings</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" id="sign-out">Exit</a>
+            </li>
+        </ul>
+
+        <div class="card text-start">
+            <div class="card-header">Import keys from Outline</div>
+            <div class="card-body">
+                <label for="outline-url" class="form-label" style="padding-left: 1px">
+                    Management API URL:
+                    <small class="text-muted">(Outline Manager > {Server} > Settings > Management API URL)</small>
+                </label>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="outline-url"
+                           placeholder="https://1.2.3.4:1313/ABC123xyz456..."
+                           aria-describedby="outline-btn">
+                    <button class="btn btn-success" type="button" id="outline-btn">Import</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-muted mt-3">
+            <small>
+                Created by <a href="https://internet24.github.com" class="text-decoration-none">Internet24</a> |
+                <a href="https://github.com/internet24/shadowsocks24" class="text-decoration-none">GitHub</a>
+            </small>
+        </div>
+    </div>
+</div>
+
+<script src="third_party/jquery-3.6.3.min.js"></script>
+<script src="third_party/bootstrap-5.3.0/js/bootstrap.min.js"></script>
+<script src="third_party/tabulator-5.4.3/dist/js/tabulator.min.js"></script>
+<script src="js/scripts.js"></script>
+<script>
+    $("#outline-btn").click(function () {
+        let me = $(this)
+        me.attr('disabled', true)
+        me.val('Processing...')
+
+        $.ajax({
+            data: JSON.stringify({"url": $("#outline-url").val()}),
+            dataType: 'json',
+            success: function () {
+                window.location = "keys.html"
+            },
+            error: function (response) {
+                checkAuth(response)
+                console.log(response)
+                me.val('Internal error!')
+                setTimeout(function () {
+                    me.val('Import')
+                    me.attr('disabled', false)
+                }, 1500)
+            },
+            processData: true,
+            type: 'POST',
+            url: '/v1/tools/outline-import'
+        });
+
+    })
+</script>
+
+</body>
+</html>

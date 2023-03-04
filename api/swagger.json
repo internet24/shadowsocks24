@@ -1,0 +1,190 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "1.0",
+    "title": "Shadowsocks24",
+    "description": "Shadowsocks24 API Documentation",
+    "contact": {
+      "email": "internet24mail@proton.me"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://raw.githubusercontent.com/internet24/shadowsocks24/master/LICENSE"
+    }
+  },
+  "externalDocs": {
+    "description": "More about Shadowsocks24",
+    "url": "https://github.com/internet24/shadowsocks24"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:80/"
+    }
+  ],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "tags": [
+          "Default"
+        ],
+        "responses": {
+          "204": {
+            "description": "No content."
+          }
+        }
+      }
+    },
+    "/v1/keys": {
+      "get": {
+        "tags": [
+          "v1"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of the keys.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/KeyResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "v1"
+        ],
+        "requestBody": {
+          "description": "Create a new key.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The key stored successfully."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "KeyRequest": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether if key is enabled."
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65536,
+            "description": "The key associated TCP and UDP port number.",
+            "example": "1420"
+          },
+          "cipher": {
+            "type": "string",
+            "description": "The key encryption algorithm (method).",
+            "example": "chacha20-ietf-poly1305",
+            "enum": [
+              "chacha20-ietf-poly1305",
+              "aes-128-gcm",
+              "aes-256-gcm"
+            ]
+          },
+          "secret": {
+            "type": "string",
+            "pattern": "[0-9a-zA-Z]+",
+            "description": "The key secret (password).",
+            "example": "Secret0"
+          },
+          "quota": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The key traffic quota in megabytes (0 for unlimited).",
+            "example": "1000"
+          }
+        },
+        "xml": {
+          "name": "Key"
+        }
+      },
+      "KeyResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "k-[0-9]{1,9}",
+            "description": "The unique key identifier.",
+            "example": "k-13"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether if key is enabled."
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65536,
+            "description": "The key associated TCP and UDP port number.",
+            "example": "1420"
+          },
+          "cipher": {
+            "type": "string",
+            "description": "The key encryption algorithm (method).",
+            "example": "chacha20-ietf-poly1305",
+            "enum": [
+              "chacha20-ietf-poly1305",
+              "aes-128-gcm",
+              "aes-256-gcm"
+            ]
+          },
+          "secret": {
+            "type": "string",
+            "pattern": "[0-9a-zA-Z]+",
+            "description": "The key secret (password).",
+            "example": "Secret0"
+          },
+          "quota": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The key traffic quota in megabytes (0 for unlimited).",
+            "example": "1000"
+          },
+          "used": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The used traffic in megabytes.",
+            "example": "1000"
+          }
+        },
+        "xml": {
+          "name": "Key"
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ]
+}
