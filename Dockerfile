@@ -22,6 +22,9 @@ WORKDIR /app
 COPY --from=build /app/shadowsocks24 shadowsocks24
 COPY --from=build /app/configs/config.json configs/config.json
 COPY --from=build /app/assets/prometheus/configs/prometheus.yml storage/prometheus/configs/prometheus.yml
+COPY --from=build /app/storage/database/.gitignore storage/database/.gitignore
+COPY --from=build /app/storage/prometheus/data/.gitignore storage/prometheus/data/.gitignore
+COPY --from=build /app/storage/shadowsocks/.gitignore storage/shadowsocks/.gitignore
 COPY --from=build /app/third_party.tar.gz third_party.tar.gz
 COPY --from=build /app/web.tar.gz web.tar.gz
 
