@@ -124,9 +124,7 @@ func (c *Coordinator) pullServer(s *database.Server) {
 
 func (c *Coordinator) pushServers() {
 	for _, s := range c.Database.ServerTable.Servers {
-		if s.Status == database.ServerStatusUnknown || s.SyncedAt < c.Database.KeyTable.UpdatedAt {
-			c.pushServer(s)
-		}
+		c.pushServer(s)
 	}
 }
 

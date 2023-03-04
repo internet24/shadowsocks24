@@ -15,7 +15,7 @@ func (c *Coordinator) start10SecondWorker() {
 }
 
 func (c *Coordinator) startMinuteWorker() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(time.Minute)
 	for range ticker.C {
 		go c.syncMetrics()
 		go c.pushServers()
