@@ -46,6 +46,7 @@ func Public(cdr *coordinator.Coordinator) echo.HandlerFunc {
 		r.KeyResponse.Key = *key
 		r.GenerateLinks(cdr)
 		if m, found := cdr.KeyMetrics[key.Id]; found {
+			r.Quota = int64(float64(r.Quota) * cdr.Database.SettingTable.TrafficRatio)
 			r.KeyMetric = coordinator.KeyMetric{
 				Id:      m.Id,
 				DownTcp: int64(float64(m.DownTcp)*cdr.Database.SettingTable.TrafficRatio) / 1000000,

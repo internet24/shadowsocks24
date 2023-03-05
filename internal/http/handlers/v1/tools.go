@@ -94,7 +94,7 @@ func OutlineImport(coordinator *coordinator.Coordinator) echo.HandlerFunc {
 				Cipher:  ak.Method,
 				Secret:  ak.Password,
 				Name:    ak.Name,
-				Quota:   int(ak.DataLimit.Bytes / 1000000),
+				Quota:   ak.DataLimit.Bytes / 1000000,
 				Enabled: true,
 			}
 			if _, err = coordinator.Database.KeyTable.Store(key); err != nil {

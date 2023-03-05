@@ -14,7 +14,7 @@ type KeysStoreRequest struct {
 	Cipher  string `json:"cipher"`
 	Secret  string `json:"secret"`
 	Name    string `json:"name"`
-	Quota   int    `json:"quota"`
+	Quota   int64  `json:"quota"`
 	Enabled bool   `json:"enabled"`
 }
 

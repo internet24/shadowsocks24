@@ -83,7 +83,7 @@ func (c *Coordinator) checkQuotas() {
 		}
 
 		if m, found := c.KeyMetrics[k.Id]; found {
-			if k.Quota != 0 && int(m.Total/1000000) > k.Quota {
+			if k.Quota != 0 && m.Total/1000000 > k.Quota {
 				k.Enabled = false
 				if _, err := c.Database.KeyTable.Update(*k); err != nil {
 					c.Logger.Error("cannot update the key", zap.Error(err))

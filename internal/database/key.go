@@ -20,7 +20,7 @@ type Key struct {
 	Cipher  string `json:"cipher" validate:"required,oneof=chacha20-ietf-poly1305 aes-128-gcm aes-256-gcm"`
 	Secret  string `json:"secret" validate:"required,min=6,max=64"`
 	Name    string `json:"name" validate:"required,min=1,max=64"`
-	Quota   int    `json:"quota" validate:"min=0"`
+	Quota   int64  `json:"quota" validate:"min=0"`
 	Enabled bool   `json:"enabled"`
 }
 
