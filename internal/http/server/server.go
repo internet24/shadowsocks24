@@ -40,10 +40,11 @@ func (s *Server) Run() {
 	s.Engine.GET("/metrics", handlers.Metrics(s.coordinator))
 	s.Engine.GET("/ssconf/*", handlers.SSConf(s.coordinator))
 	s.Engine.GET("/subscription/*", handlers.Subscription(s.coordinator))
+	s.Engine.GET("/public", handlers.Public(s.coordinator))
 
 	g1 := s.Engine.Group("/v1")
 	g1.POST("/sign-in", v1.SignIn(s.coordinator))
-	g1.GET("/traffic", v1.Traffic(s.coordinator))
+	g1.GET("/public", v1.Public(s.coordinator))
 
 	g2 := s.Engine.Group("/v1")
 	g2.Use(internalMw.Authorize(s.coordinator.Database))

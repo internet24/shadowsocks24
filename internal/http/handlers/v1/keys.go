@@ -1,10 +1,13 @@
 package v1
 
 import (
+	"encoding/base64"
+	"fmt"
 	"github.com/internet24/shadowsocks24/internal/coordinator"
 	"github.com/internet24/shadowsocks24/internal/database"
 	"github.com/labstack/echo/v4"
 	"net/http"
+	"strings"
 )
 
 type KeysStoreRequest struct {
@@ -22,21 +25,48 @@ type KeysUpdateRequest struct {
 
 type KeyResponse struct {
 	database.Key
-	Used int64 `json:"used"`
+	Used         int64    `json:"used"`
+	Public       string   `json:"public"`
+	SSCONF       string   `json:"ssconf"`
+	Subscription string   `json:"subscription"`
+	SSKeys       []string `json:"ss_keys"`
+}
+
+func (k *KeyResponse) GenerateLinks(c *coordinator.Coordinator) {
+	auth := base64.StdEncoding.EncodeToString([]byte(k.Cipher + ":" + k.Secret))
+
+	if c.Database.SettingTable.ExternalHttps != "" {
+		url := strings.Replace(c.Database.SettingTable.ExternalHttps, "https://", "ssconf://", 1)
+		k.SSCONF = fmt.Sprintf("%s/ssconf/%s.json#%s", url, auth, k.Name)
+		k.Public = fmt.Sprintf("%s/public?k=%s", c.Database.SettingTable.ExternalHttps, auth)
+	} else {
+		k.Public = fmt.Sprintf("%s/public?k=%s", c.Database.SettingTable.ExternalHttp, auth)
+	}
+
+	k.Subscription = fmt.Sprintf("%s/subscription/%s#%s", c.Database.SettingTable.ExternalHttp, auth, k.Name)
+
+	for _, s := range append(c.Database.ServerTable.Servers, c.CurrentServer()) {
+		if s.ShadowsocksEnabled {
+			k.SSKeys = append(k.SSKeys, fmt.Sprintf(
+				"ss://%s@$%s:%d/?outline=1#%s", auth, s.ShadowsocksHost, s.ShadowsocksPort, k.Name,
+			))
+		}
+	}
 }
 
 func KeysIndex(coordinator *coordinator.Coordinator) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		keys := make([]KeyResponse, 0, len(coordinator.Database.KeyTable.Keys))
+		krs := make([]KeyResponse, 0, len(coordinator.Database.KeyTable.Keys))
 		for _, k := range coordinator.Database.KeyTable.Keys {
-			key := KeyResponse{Key: *k}
+			kr := &KeyResponse{Key: *k}
+			kr.GenerateLinks(coordinator)
 			if m, found := coordinator.KeyMetrics[k.Id]; found {
-				key.Used = m.Total / 1000000
+				kr.Used = m.Total / 1000000
 			}
-			keys = append(keys, key)
+			krs = append(krs, *kr)
 		}
 
-		return c.JSON(http.StatusOK, keys)
+		return c.JSON(http.StatusOK, krs)
 	}
 }
 
@@ -109,6 +139,7 @@ func KeysUpdate(coordinator *coordinator.Coordinator) echo.HandlerFunc {
 		go coordinator.Sync()
 
 		kr := KeyResponse{Key: *key}
+		kr.GenerateLinks(coordinator)
 		if m, found := coordinator.KeyMetrics[kr.Id]; found {
 			kr.Used = m.Total / 1000000
 		}

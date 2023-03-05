@@ -51,38 +51,16 @@
 </div>
 
 <div class="modal" tabindex="-1" id="keyModal">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Access Keys</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div>
-                    <label class="form-label">
-                        <small>Shadowsocks Keys:</small>
-                    </label>
-                    <ul id="shadowsocks-keys"></ul>
-                </div>
-                <div class="mt-2">
-                    <label class="form-label">
-                        <small>SSConf Link:</small>
-                        <small class="text-muted">(for Outline clients)</small>
-                    </label>
-                    <ul id="ssconf-links"></ul>
-                </div>
-                <div class="mt-2">
-                    <label class="form-label">
-                        <small>Subscription Links:</small>
-                        <small class="text-muted">(for V2Ray clients)</small>
-                    </label>
-                    <ul id="subscription-links"></ul>
-                </div>
-                <div class="mt-2">
-                    <label class="form-label">
-                        <small>Traffic Links:</small>
-                    </label>
-                    <ul id="traffic-links"></ul>
+                <div class="my-2">
+                    <p class="form-label">Public Link:</p>
+                    <small><small id="public-link"></small></small>
                 </div>
             </div>
         </div>
@@ -94,73 +72,10 @@
 <script src="third_party/tabulator-5.4.3/dist/js/tabulator.min.js"></script>
 <script src="js/scripts.js"></script>
 <script>
-    let SETTINGS
-    $.ajax({
-        dataType: "json",
-        success: function (response) {
-            SETTINGS = response
-        },
-        error: function (response) {
-            console.log(response)
-            checkAuth(response)
-        },
-        processData: true,
-        type: "GET",
-        url: "/v1/settings"
-    });
-
-    let SERVERS
-    $.ajax({
-        dataType: "json",
-        success: function (response) {
-            SERVERS = response
-        },
-        error: function (response) {
-            console.log(response)
-            checkAuth(response)
-        },
-        processData: true,
-        type: "GET",
-        url: "/v1/servers"
-    });
-
     let show = function (rowIndex) {
         let data = table.getRow(rowIndex).getData()
 
-        let secret = data.secret
-        let cipher = data.cipher
-        let name = data.name
-        let auth = btoa(`${cipher}:${secret}`)
-
-        let shadowsocksKeys = $("#shadowsocks-keys")
-        shadowsocksKeys.html("")
-        SERVERS.forEach(function (v) {
-            if (v['shadowsocks_enabled']) {
-                let host = v["shadowsocks_host"]
-                let port = v["shadowsocks_port"]
-                let key = `ss://${auth}@${host}:${port}/?outline=1#${name}`
-                shadowsocksKeys.append(`<li><a href="${key}">${key}</a></li>`)
-            }
-        })
-
-        if (SETTINGS["external_https"]) {
-            let url = SETTINGS["external_https"].replace(/https/i, 'ssconf')
-            let key = `${url}/ssconf/${auth}.json#${name}`
-            $("#ssconf-links").html(`<li><a href="${key}">${key}</a></li>`)
-        } else {
-            $("#ssconf-links").html("<li>It requires <code>External HTTPS</code> in Settings tab.</li>")
-        }
-
-        let subscription = `${SETTINGS["external_http"]}/subscription/${auth}#${name}`
-        $("#subscription-links").html(`<li><a href="${subscription}">${subscription}</a></li>`)
-
-        let trafficLink
-        if (SETTINGS["external_https"]) {
-            trafficLink = SETTINGS["external_https"] + "/traffic.html?q=" + auth
-        } else {
-            trafficLink = SETTINGS["external_http"] + "/traffic.html?q=" + auth
-        }
-        $("#traffic-links").html(`<li><a href="${trafficLink}">${trafficLink}</a></li>`)
+        $("#public-link").html(`<a href="${data["public"]}">${data["public"]}</a>`)
 
         $("#keyModal").modal("show")
     };

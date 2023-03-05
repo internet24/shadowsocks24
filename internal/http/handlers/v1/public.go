@@ -9,15 +9,14 @@ import (
 	"strings"
 )
 
-type TrafficResponse struct {
+type PublicResponse struct {
 	coordinator.KeyMetric
-	Name  string `json:"name"`
-	Quota int    `json:"quota"`
+	KeyResponse
 }
 
-func Traffic(cdr *coordinator.Coordinator) echo.HandlerFunc {
+func Public(cdr *coordinator.Coordinator) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var query, err = b64.StdEncoding.DecodeString(c.QueryParam("q"))
+		var query, err = b64.StdEncoding.DecodeString(c.QueryParam("k"))
 		if err != nil {
 			return c.JSON(http.StatusNotFound, map[string]string{
 				"message": "Not found.",
@@ -43,9 +42,9 @@ func Traffic(cdr *coordinator.Coordinator) echo.HandlerFunc {
 			})
 		}
 
-		var r TrafficResponse
-		r.Name = key.Name
-		r.Quota = key.Quota
+		var r PublicResponse
+		r.KeyResponse.Key = *key
+		r.GenerateLinks(cdr)
 		if m, found := cdr.KeyMetrics[key.Id]; found {
 			r.KeyMetric = coordinator.KeyMetric{
 				Id:      m.Id,
