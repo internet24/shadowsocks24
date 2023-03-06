@@ -21,7 +21,7 @@ func (c *Coordinator) run10SecondJobs() {
 }
 
 func (c *Coordinator) startMinuteWorker() {
-	ticker := time.NewTicker(time.Hour)
+	ticker := time.NewTicker(time.Minute)
 	for range ticker.C {
 		go c.runMinuteJobs()
 	}
