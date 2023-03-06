@@ -71,7 +71,7 @@ func ServersStore(coordinator *coordinator.Coordinator) echo.HandlerFunc {
 			})
 		}
 
-		go coordinator.SyncServers(true)
+		go coordinator.Sync()
 
 		sr := ServerResponse{Server: *server, Id: server.Id}
 
@@ -88,11 +88,23 @@ func ServersUpdate(coordinator *coordinator.Coordinator) echo.HandlerFunc {
 			})
 		}
 
+		server := coordinator.Database.ServerTable.Find(r.Id)
+		if server == nil {
+			return c.JSON(http.StatusNotFound, map[string]string{
+				"message": "The server not found.",
+			})
+		}
+
 		server, err := coordinator.Database.ServerTable.Update(database.Server{
-			Id:       r.Id,
-			HttpHost: r.HttpHost,
-			HttpPort: r.HttpPort,
-			ApiToken: r.ApiToken,
+			Id:                 r.Id,
+			HttpHost:           r.HttpHost,
+			HttpPort:           r.HttpPort,
+			ApiToken:           r.ApiToken,
+			ShadowsocksEnabled: server.ShadowsocksEnabled,
+			ShadowsocksHost:    server.ShadowsocksHost,
+			ShadowsocksPort:    server.ShadowsocksPort,
+			Status:             server.Status,
+			SyncedAt:           server.SyncedAt,
 		})
 		if err != nil {
 			if _, ok := err.(database.DataError); ok {
@@ -110,7 +122,7 @@ func ServersUpdate(coordinator *coordinator.Coordinator) echo.HandlerFunc {
 			})
 		}
 
-		go coordinator.SyncServers(true)
+		go coordinator.Sync()
 
 		sr := ServerResponse{
 			Server: *server,
@@ -135,7 +147,7 @@ func ServersDelete(coordinator *coordinator.Coordinator) echo.HandlerFunc {
 			})
 		}
 
-		go coordinator.SyncServers(true)
+		go coordinator.Sync()
 
 		return c.NoContent(http.StatusNoContent)
 	}

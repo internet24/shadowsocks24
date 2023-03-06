@@ -15,7 +15,7 @@ type SignInRequest struct {
 func SignIn(coordinator *coordinator.Coordinator) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		defer func() {
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Second)
 		}()
 
 		var r SignInRequest

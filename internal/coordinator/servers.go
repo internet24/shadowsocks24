@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/internet24/shadowsocks24/internal/database"
-	"github.com/internet24/shadowsocks24/pkg/utils"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"io"
@@ -13,19 +12,18 @@ import (
 	"time"
 )
 
-func (c *Coordinator) SyncServers(reconfigure bool) {
+func (c *Coordinator) syncServers(reconfigure bool) {
 	c.Logger.Debug("syncing servers with the prometheus service")
 
-	servers := map[string]string{
-		"s-0": fmt.Sprintf("127.0.0.1:%d", c.MetricsPort),
-	}
+	servers := map[string]string{c.CurrentServer().Id: fmt.Sprintf("127.0.0.1:%d", c.CurrentServer().HttpPort)}
 	for _, s := range c.Database.ServerTable.Servers {
 		servers[s.Id] = fmt.Sprintf("%s:%d", s.HttpHost, s.HttpPort)
 	}
 
 	if err := c.Prometheus.Update(servers); err != nil {
-		c.Logger.Fatal("cannot sync servers with the prometheus service", zap.Error(err))
+		c.Logger.Fatal("cannot set servers in the prometheus service", zap.Error(err))
 	}
+
 	if reconfigure {
 		c.Prometheus.Reload()
 	}
@@ -36,14 +34,14 @@ func (c *Coordinator) SyncServers(reconfigure bool) {
 func (c *Coordinator) CurrentServer() *database.Server {
 	return &database.Server{
 		Id:                 "s-0",
-		HttpHost:           utils.IP(),
+		Status:             database.ServerStatusActive,
+		HttpHost:           c.IP,
 		HttpPort:           c.Config.HttpServer.Port,
 		ShadowsocksEnabled: c.Database.SettingTable.ShadowsocksEnabled,
 		ShadowsocksHost:    c.Database.SettingTable.ShadowsocksHost,
 		ShadowsocksPort:    c.Database.SettingTable.ShadowsocksPort,
 		ApiToken:           c.Database.SettingTable.ApiToken,
-		Status:             database.ServerStatusActive,
-		SyncedAt:           time.Now().Unix(),
+		SyncedAt:           c.SyncedAt,
 	}
 }
 
@@ -56,7 +54,7 @@ func (c *Coordinator) updateServerStatus(s *database.Server, newStatus string) {
 
 func (c *Coordinator) pullServers() {
 	for _, s := range c.Database.ServerTable.Servers {
-		c.pullServer(s)
+		go c.pullServer(s)
 	}
 }
 
@@ -65,7 +63,7 @@ func (c *Coordinator) pullServer(s *database.Server) {
 
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		c.Logger.Error("cannot create health request", zap.String("url", url), zap.Error(err))
+		c.Logger.Error("cannot create server pull request", zap.String("url", url), zap.Error(err))
 		c.updateServerStatus(s, database.ServerStatusUnavailable)
 		return
 	}
@@ -75,7 +73,7 @@ func (c *Coordinator) pullServer(s *database.Server) {
 
 	response, err := c.Http.Do(request)
 	if err != nil {
-		c.Logger.Error("cannot check server health", zap.String("url", url), zap.Error(err))
+		c.Logger.Error("cannot pull server", zap.String("url", url), zap.Error(err))
 		c.updateServerStatus(s, database.ServerStatusUnavailable)
 		return
 	}
@@ -88,43 +86,40 @@ func (c *Coordinator) pullServer(s *database.Server) {
 		return
 	}
 
-	if response.StatusCode == http.StatusOK {
-		body, err := io.ReadAll(response.Body)
-		if err != nil {
-			c.Logger.Error("cannot read pulled server", zap.String("url", url), zap.Error(err))
-			c.updateServerStatus(s, database.ServerStatusUnavailable)
-			return
-		}
-
-		var settings database.SettingTable
-		if err = json.Unmarshal(body, &settings); err != nil {
-			c.Logger.Error(
-				"cannot unmarshall pulled server", zap.String("url", url),
-				zap.Error(err), zap.String("body", string(body)),
-			)
-			c.updateServerStatus(s, database.ServerStatusUnavailable)
-			return
-		}
-
-		s.Status = database.ServerStatusActive
-		s.ShadowsocksEnabled = settings.ShadowsocksEnabled
-		s.ShadowsocksHost = settings.ShadowsocksHost
-		s.ShadowsocksPort = settings.ShadowsocksPort
-		if _, err = c.Database.ServerTable.Update(*s); err != nil {
-			c.Logger.Error("cannot update server status", zap.String("server", s.Id), zap.Error(err))
-		}
-
+	if response.StatusCode != http.StatusOK {
+		c.updateServerStatus(s, database.ServerStatusUnavailable)
+		return
+	}
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		c.Logger.Error("cannot read pulled server", zap.String("url", url), zap.Error(err))
+		c.updateServerStatus(s, database.ServerStatusUnavailable)
 		return
 	}
 
-	c.updateServerStatus(s, database.ServerStatusUnavailable)
-	_ = response.Body.Close()
+	var settings database.SettingTable
+	if err = json.Unmarshal(body, &settings); err != nil {
+		c.Logger.Error(
+			"cannot unmarshall pulled server", zap.String("url", url),
+			zap.Error(err), zap.String("body", string(body)),
+		)
+		c.updateServerStatus(s, database.ServerStatusUnavailable)
+		return
+	}
 
+	s.Status = database.ServerStatusActive
+	s.ShadowsocksEnabled = settings.ShadowsocksEnabled
+	s.ShadowsocksHost = settings.ShadowsocksHost
+	s.ShadowsocksPort = settings.ShadowsocksPort
+
+	if _, err = c.Database.ServerTable.Update(*s); err != nil {
+		c.Logger.Error("cannot update server", zap.String("server", s.Id), zap.Error(err))
+	}
 }
 
 func (c *Coordinator) pushServers() {
 	for _, s := range c.Database.ServerTable.Servers {
-		c.pushServer(s)
+		go c.pushServer(s)
 	}
 }
 
@@ -169,6 +164,7 @@ func (c *Coordinator) pushServer(s *database.Server) {
 
 	s.Status = database.ServerStatusActive
 	s.SyncedAt = time.Now().Unix()
+
 	if _, err = c.Database.ServerTable.Update(*s); err != nil {
 		c.Logger.Error("cannot update server", zap.String("server", s.Id), zap.Error(err))
 	}

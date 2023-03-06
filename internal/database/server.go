@@ -16,7 +16,7 @@ const ServerPath = "storage/database/servers.json"
 
 const (
 	ServerStatusActive       = "active"
-	ServerStatusUnknown      = "unknown"
+	ServerStatusProcessing   = "processing"
 	ServerStatusUnauthorized = "unauthorized"
 	ServerStatusUnavailable  = "unavailable"
 )
@@ -26,8 +26,8 @@ type Server struct {
 	HttpHost           string `json:"http_host" validate:"required"`
 	HttpPort           int    `json:"http_port" validate:"required,min=1,max=65536"`
 	ShadowsocksEnabled bool   `json:"shadowsocks_enabled"`
-	ShadowsocksHost    string `json:"shadowsocks_host" validate:"required"`
-	ShadowsocksPort    int    `json:"shadowsocks_port" validate:"required,min=1,max=65536"`
+	ShadowsocksHost    string `json:"shadowsocks_host"`
+	ShadowsocksPort    int    `json:"shadowsocks_port" validate:"min=1,max=65536"`
 	ApiToken           string `json:"api_token"`
 	Status             string `json:"status"`
 	SyncedAt           int64  `json:"synced_at" validate:"min=0"`
@@ -88,10 +88,10 @@ func (st *ServerTable) Save() (err error) {
 
 func (st *ServerTable) Store(server Server) (*Server, error) {
 	server.Id = fmt.Sprintf("s-%d", st.NextId)
-	server.Status = ServerStatusUnknown
+	server.Status = ServerStatusProcessing
 	server.ShadowsocksEnabled = false
-	server.ShadowsocksHost = "{LOADING}"
-	server.ShadowsocksPort = 1000
+	server.ShadowsocksHost = ""
+	server.ShadowsocksPort = 1
 
 	st.NextId++
 	st.Servers = append(st.Servers, &server)
@@ -108,11 +108,20 @@ func (st *ServerTable) Update(server Server) (*Server, error) {
 			st.Servers[i].ShadowsocksHost = server.ShadowsocksHost
 			st.Servers[i].ShadowsocksPort = server.ShadowsocksPort
 			st.Servers[i].ApiToken = server.ApiToken
+			st.Servers[i].Status = server.Status
 			return st.Servers[i], st.Save()
 		}
 	}
-
 	return nil, nil
+}
+
+func (st *ServerTable) Find(Id string) *Server {
+	for i, s := range st.Servers {
+		if s.Id == Id {
+			return st.Servers[i]
+		}
+	}
+	return nil
 }
 
 func (st *ServerTable) Delete(id string) error {

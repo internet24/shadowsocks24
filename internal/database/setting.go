@@ -14,9 +14,9 @@ const SettingPath = "storage/database/settings.json"
 
 type SettingTable struct {
 	AdminPassword      string  `json:"admin_password" validate:"required,min=8,max=32"`
-	ApiToken           string  `json:"api_token" validate:"required,min=16,max=64"`
+	ApiToken           string  `json:"api_token" validate:"required,min=16,max=128"`
 	ShadowsocksEnabled bool    `json:"shadowsocks_enabled"`
-	ShadowsocksHost    string  `json:"shadowsocks_host" validate:"required,max=64"`
+	ShadowsocksHost    string  `json:"shadowsocks_host" validate:"required,max=128"`
 	ShadowsocksPort    int     `json:"shadowsocks_port" validate:"required,min=1,max=65536"`
 	ExternalHttps      string  `json:"external_https"`
 	ExternalHttp       string  `json:"external_http" validate:"required"`

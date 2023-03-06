@@ -72,14 +72,6 @@
 <script src="third_party/tabulator-5.4.3/dist/js/tabulator.min.js"></script>
 <script src="js/scripts.js"></script>
 <script>
-    let show = function (rowIndex) {
-        let data = table.getRow(rowIndex).getData()
-
-        $("#public-link").html(`<a href="${data["public"]}">${data["public"]}</a>`)
-
-        $("#keyModal").modal("show")
-    };
-
     let tooltip = function (e, cell) {
         let el = document.createElement("div");
         el.style.backgroundColor = "black";
@@ -134,9 +126,9 @@
     }
 
     let actionsFormatter = function (cell) {
-        return `<button class="btn btn-sm btn-outline-danger" onclick="destroy('${cell.getRow().getIndex()}')">
-                Delete</button>&nbsp;<button class="btn btn-sm btn-success" onclick="show('${cell.getRow().getIndex()}')">
-                Show</button>`;
+        return `<button class="btn btn-sm btn-outline-danger"
+                onclick="destroy('${cell.getRow().getIndex()}')">Delete</button>&nbsp
+                <a target="_blank" href="${cell.getData().public}" class="btn btn-sm btn-success">Public</a>`;
     }
 
     let table = new Tabulator("#table", {

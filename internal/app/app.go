@@ -53,7 +53,7 @@ func New(configPath string) (app *App, err error) {
 	app.HttpClient = client.New(app.Config)
 	app.Logger.Engine.Debug("http client initialized")
 
-	if app.Database, err = database.New(app.Config); err != nil {
+	if app.Database, err = database.New(); err != nil {
 		return app, err
 	}
 	app.Logger.Engine.Debug("database initialized and loaded")

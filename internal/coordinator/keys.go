@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-func (c *Coordinator) SyncKeys(reconfigure bool) {
-	c.Logger.Debug("syncing keys with the shadowsocks service...")
+func (c *Coordinator) syncKeys(reconfigure bool) {
+	c.Logger.Debug("syncing keys with the shadowsocks server...")
 
 	keys := make([]shadowsocks.Key, 0, len(c.Database.KeyTable.Keys))
 	for _, k := range c.Database.KeyTable.Keys {
@@ -23,7 +23,7 @@ func (c *Coordinator) SyncKeys(reconfigure bool) {
 	}
 
 	if err := c.Shadowsocks.Update(keys); err != nil {
-		c.Logger.Fatal("cannot sync keys with the shadowsocks service", zap.Error(err))
+		c.Logger.Fatal("cannot sync keys with the shadowsocks server", zap.Error(err))
 	}
 
 	if reconfigure {

@@ -7,18 +7,15 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 )
 
-var ip string
-
+// IP finds public IP address.
 func IP() string {
-	if ip != "" {
-		return ip
-	}
+	ip := "127.0.0.1"
 
-	ip = "127.0.0.1"
-
-	response, err := http.Get("https://api.ipify.org?format=json")
+	client := http.Client{Timeout: 5 * time.Second}
+	response, err := client.Get("https://api.ipify.org?format=json")
 	if err != nil || response.StatusCode != http.StatusOK {
 		return ip
 	}
@@ -33,18 +30,17 @@ func IP() string {
 	}
 	if err = json.Unmarshal(body, &s); err != nil {
 		return ip
-	} else {
-		ip = s.IP
 	}
 
-	return ip
+	return s.IP
 }
 
+// Token generates a random token
 func Token() string {
 	return random.String(32)
 }
 
-// FreePort finds a free port to use for exposing (prometheus) metrics.
+// FreePort finds a free port.
 func FreePort() (int, error) {
 	address, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {

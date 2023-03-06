@@ -74,16 +74,14 @@
     }
 
     let shadowsocksFormatter = function (cell) {
-        if (cell.getData().id === "{ID}") {
-            return "{SHADOWSOCKS}"
+        if (cell.getData().id === "{ID}" || cell.getData().shadowsocks_host === "") {
+            return `<span class="text-muted">{SHADOWSOCKS}</span>`
         }
-        if (cell.getData().shadowsocks_host === "{LOADING}") {
-            return "{LOADING}"
+        if (cell.getData()["shadowsocks_enabled"]) {
+            return `${cell.getData().shadowsocks_host}:${cell.getData().shadowsocks_port}`
+        } else {
+            return `<span class="text-danger">Disabled</span>`
         }
-        let status = cell.getData()["shadowsocks_enabled"]
-            ? `<span class="text-success">Enabled</span>`
-            : `<span class="text-danger">Disabled</span>`
-        return `${cell.getData().shadowsocks_host}:${cell.getData().shadowsocks_port} (${status})`
     }
 
     let statusFormatter = function (cell) {
@@ -91,12 +89,12 @@
             case "active":
                 cell.getElement().style.color = "#198754"
                 return "Active"
-            case "unknown":
+            case "processing":
                 cell.getElement().style.color = "#949494"
-                return "Not synced yet"
+                return "Processing..."
             case "unauthorized":
                 cell.getElement().style.color = "#872919"
-                return "Unauthorized (invalid token)"
+                return "Unauthorized (Invalid Token)"
             case "unavailable":
                 cell.getElement().style.color = "#872919"
                 return "Unavailable"

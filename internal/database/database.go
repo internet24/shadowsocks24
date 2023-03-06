@@ -1,11 +1,5 @@
 package database
 
-import (
-	"fmt"
-	"github.com/internet24/shadowsocks24/internal/config"
-	"github.com/internet24/shadowsocks24/pkg/utils"
-)
-
 type DataError string
 
 func (de DataError) Error() string {
@@ -18,16 +12,16 @@ type Database struct {
 	ServerTable  *ServerTable
 }
 
-func New(c *config.Config) (*Database, error) {
+func New() (*Database, error) {
 	db := &Database{
 		SettingTable: &SettingTable{
 			AdminPassword:      "password",
-			ApiToken:           utils.Token(),
-			ShadowsocksHost:    utils.IP(),
-			ShadowsocksPort:    1000,
+			ApiToken:           "SECRET0123456789",
+			ShadowsocksHost:    "127.0.0.1",
+			ShadowsocksPort:    1,
 			ShadowsocksEnabled: true,
 			ExternalHttps:      "",
-			ExternalHttp:       fmt.Sprintf("http://%s:%d", utils.IP(), c.HttpServer.Port),
+			ExternalHttp:       "http://127.0.0.1:80",
 			TrafficRatio:       1,
 		},
 		KeyTable: &KeyTable{
