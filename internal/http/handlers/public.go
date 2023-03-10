@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func Public(coordinator *coordinator.Coordinator) echo.HandlerFunc {
+func Public(_ *coordinator.Coordinator) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		content, err := os.ReadFile("web/public.html")
 		if err != nil {

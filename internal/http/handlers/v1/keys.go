@@ -46,7 +46,7 @@ func (k *KeyResponse) GenerateLinks(c *coordinator.Coordinator) {
 	k.Subscription = fmt.Sprintf("%s/subscription/%s#%s", c.Database.SettingTable.ExternalHttp, auth, k.Name)
 
 	for _, s := range append(c.Database.ServerTable.Servers, c.CurrentServer()) {
-		if s.ShadowsocksEnabled {
+		if s.ShadowsocksEnabled && s.Status == database.ServerStatusActive {
 			k.SSKeys = append(k.SSKeys, fmt.Sprintf(
 				"ss://%s@%s:%d/?outline=1#%s", auth, s.ShadowsocksHost, s.ShadowsocksPort, k.Name,
 			))
